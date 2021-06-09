@@ -6,6 +6,7 @@ import (
 	"arch-repo/repository"
 	"arch-repo/storage/file"
 	"context"
+	"encoding/json"
 	"errors"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -17,6 +18,7 @@ import (
 
 var issuer string
 var jwksUrl string
+var claimsJson string
 var skipAuth bool
 var bucket string
 var name string
@@ -24,9 +26,10 @@ var name string
 func init() {
 	serverCmd.Flags().StringVarP(&issuer, "issuer", "i", "", "JWT issuer")
 	serverCmd.Flags().StringVarP(&jwksUrl, "jwks", "k", "", "JWT key store URL")
-	serverCmd.Flags().BoolVar(&skipAuth, "skip-auth", false, "Disable authentication")
+	serverCmd.Flags().StringVarP(&claimsJson, "claims", "c", "", "required JWT token claims (JSON)")
+	serverCmd.Flags().BoolVar(&skipAuth, "skip-auth", false, "disable authentication")
 	serverCmd.Flags().StringVarP(&bucket, "bucket", "b", "", "AWS bucket")
-	serverCmd.Flags().StringVarP(&name, "name", "n", "", "Repository name")
+	serverCmd.Flags().StringVarP(&name, "name", "n", "", "repository name")
 	_ = serverCmd.MarkFlagRequired("bucket")
 	_ = serverCmd.MarkFlagRequired("name")
 }
@@ -49,7 +52,7 @@ var serverCmd = &cobra.Command{
 
 		r := gin.Default()
 
-		if issuer != "" {
+		if !skipAuth && issuer != "" {
 			var verifier *oidc.IDTokenVerifier
 			if jwksUrl != "" {
 				keySet := oidc.NewRemoteKeySet(context.Background(), jwksUrl)
@@ -65,7 +68,15 @@ var serverCmd = &cobra.Command{
 					SkipClientIDCheck: true,
 				})
 			}
-			r.Use(auth.JWTMiddleware(verifier))
+
+			var claims map[string]interface{}
+			if claimsJson != "" {
+				if err := json.Unmarshal([]byte(claimsJson), &claims); err != nil {
+					return err
+				}
+			}
+
+			r.Use(auth.JWTMiddleware(verifier, claims))
 		} else if !skipAuth {
 			return errors.New("authentication not configured")
 		}

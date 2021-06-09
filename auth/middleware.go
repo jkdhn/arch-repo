@@ -9,7 +9,7 @@ import (
 
 const prefix = "Bearer "
 
-func JWTMiddleware(verifier *oidc.IDTokenVerifier) gin.HandlerFunc {
+func JWTMiddleware(verifier *oidc.IDTokenVerifier, claims map[string]interface{}) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if !strings.HasPrefix(authHeader, prefix) {
@@ -18,10 +18,23 @@ func JWTMiddleware(verifier *oidc.IDTokenVerifier) gin.HandlerFunc {
 		}
 
 		rawToken := authHeader[len(prefix):]
-		_, err := verifier.Verify(c.Request.Context(), rawToken)
+		token, err := verifier.Verify(c.Request.Context(), rawToken)
 		if err != nil {
 			_ = c.AbortWithError(http.StatusUnauthorized, err)
 			return
+		}
+
+		var actualClaims map[string]interface{}
+		if err := token.Claims(&actualClaims); err != nil {
+			_ = c.AbortWithError(http.StatusUnauthorized, err)
+			return
+		}
+
+		for k, v := range claims {
+			if actualClaims[k] != v {
+				c.AbortWithStatus(http.StatusUnauthorized)
+				return
+			}
 		}
 	}
 }
