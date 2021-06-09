@@ -20,7 +20,7 @@ type UploadResponse struct {
 	UploadHeader map[string][]string `json:"upload_header"`
 }
 
-var filenamePattern = regexp.MustCompile("^[a-z0-9.\\-_:]+\\.pkg\\.tar\\.[a-z0-9]+$")
+var pattern = regexp.MustCompile("^[a-z0-9.\\-_:]+$")
 
 func (a *API) Upload(c *gin.Context) {
 	var request UploadRequest
@@ -28,7 +28,17 @@ func (a *API) Upload(c *gin.Context) {
 		return
 	}
 
-	if !filenamePattern.MatchString(request.Description.FileName) {
+	if !pattern.MatchString(request.Description.Name) {
+		_ = c.AbortWithError(http.StatusBadRequest, errors.New("invalid name"))
+		return
+	}
+
+	if !pattern.MatchString(request.Description.Version) {
+		_ = c.AbortWithError(http.StatusBadRequest, errors.New("invalid version"))
+		return
+	}
+
+	if !pattern.MatchString(request.Description.FileName) {
 		_ = c.AbortWithError(http.StatusBadRequest, errors.New("invalid filename"))
 		return
 	}
