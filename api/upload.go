@@ -20,7 +20,7 @@ type UploadResponse struct {
 	UploadHeader map[string][]string `json:"upload_header"`
 }
 
-var filenamePattern = regexp.MustCompile("^[a-z0-9.\\-_]+\\.pkg\\.tar\\.[a-z0-9]+$")
+var filenamePattern = regexp.MustCompile("^[a-z0-9.\\-_:]+\\.pkg\\.tar\\.[a-z0-9]+$")
 
 func (a *API) Upload(c *gin.Context) {
 	var request UploadRequest
