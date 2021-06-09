@@ -18,11 +18,17 @@ import (
 var issuer string
 var jwksUrl string
 var skipAuth bool
+var bucket string
+var name string
 
 func init() {
 	serverCmd.Flags().StringVarP(&issuer, "issuer", "i", "", "JWT issuer")
 	serverCmd.Flags().StringVarP(&jwksUrl, "jwks", "k", "", "JWT key store URL")
 	serverCmd.Flags().BoolVar(&skipAuth, "skip-auth", false, "Disable authentication")
+	serverCmd.Flags().StringVarP(&bucket, "bucket", "b", "", "AWS bucket")
+	serverCmd.Flags().StringVarP(&name, "name", "n", "", "Repository name")
+	_ = serverCmd.MarkFlagRequired("bucket")
+	_ = serverCmd.MarkFlagRequired("name")
 }
 
 var serverCmd = &cobra.Command{
@@ -37,12 +43,9 @@ var serverCmd = &cobra.Command{
 		client := s3.NewFromConfig(cfg)
 		presign := s3.NewPresignClient(client)
 
-		bucket := "jkdhn-arch-pkg"
-		name := "jkdhn"
-
 		s := file.NewStorage(".")
 		repo := repository.NewRepository(s, client, bucket, name)
-		a := api.New("jkdhn-arch-pkg", repo, presign)
+		a := api.New(bucket, repo, presign)
 
 		r := gin.Default()
 
