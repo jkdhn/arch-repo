@@ -75,6 +75,9 @@ func (e *Encoder) encodeValue(value reflect.Value) (string, error) {
 func (e *Encoder) encode(field reflect.StructField, value reflect.Value) error {
 	key, ok := field.Tag.Lookup("pkgdesc")
 	if !ok {
+		if value.Type().Kind() == reflect.Struct {
+			return e.encodeStruct(value)
+		}
 		return nil
 	}
 
@@ -94,17 +97,15 @@ func (e *Encoder) encode(field reflect.StructField, value reflect.Value) error {
 	return nil
 }
 
-func (e *Encoder) Encode(desc *Description) error {
-	t := reflect.TypeOf(desc).Elem()
-	v := reflect.ValueOf(desc).Elem()
-
-	for i := 0; i < t.NumField(); i++ {
-		field := t.Field(i)
-		value := v.Field(i)
-		if err := e.encode(field, value); err != nil {
+func (e *Encoder) encodeStruct(value reflect.Value) error {
+	for i := 0; i < value.NumField(); i++ {
+		if err := e.encode(value.Type().Field(i), value.Field(i)); err != nil {
 			return err
 		}
 	}
-
 	return nil
+}
+
+func (e *Encoder) Encode(desc *Description) error {
+	return e.encodeStruct(reflect.Indirect(reflect.ValueOf(desc)))
 }
