@@ -29,7 +29,7 @@ func (s *Storage) Put(description *desc.Description) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	name := filepath.Join(s.path, fmt.Sprintf("%v-%v.json", description.Name, description.Version))
+	name := filepath.Join(s.path, fmt.Sprintf("%v.json", description.Name))
 	file, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		return err
