@@ -17,13 +17,13 @@ var apiUrl string
 var authToken string
 
 func init() {
-	deployCmd.Flags().StringVarP(&apiUrl, "api-url", "a", "", "Repository API URL")
+	deployCmd.Flags().StringVarP(&apiUrl, "api-url", "a", "", "repository API URL")
 	deployCmd.Flags().StringVarP(&authToken, "auth-token", "t", "", "JWT token")
 	_ = deployCmd.MarkFlagRequired("api-url")
 }
 
 var deployCmd = &cobra.Command{
-	Use:  "deploy",
+	Use:  "deploy --api-url url filename",
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		file, err := os.Open(args[0])
