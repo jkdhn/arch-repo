@@ -8,13 +8,15 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"os"
+	"time"
 )
 
 var issuer string
@@ -25,6 +27,7 @@ var bucket string
 var name string
 var endpoint string
 var endpointRegion string
+var cleanupInterval time.Duration
 
 func init() {
 	serverCmd.Flags().StringVarP(&issuer, "issuer", "i", "", "JWT issuer")
@@ -35,6 +38,7 @@ func init() {
 	serverCmd.Flags().StringVarP(&name, "name", "n", "", "repository name")
 	serverCmd.Flags().StringVarP(&endpoint, "endpoint", "e", "", "S3 endpoint")
 	serverCmd.Flags().StringVarP(&endpointRegion, "endpoint-region", "r", "", "S3 endpoint signing region")
+	serverCmd.Flags().DurationVar(&cleanupInterval, "cleanup-interval", 48*time.Hour, "Cleanup interval")
 	_ = serverCmd.MarkFlagRequired("bucket")
 	_ = serverCmd.MarkFlagRequired("name")
 }
@@ -58,7 +62,7 @@ var serverCmd = &cobra.Command{
 			},
 		)
 		if err != nil {
-			logrus.WithError(err).Fatal("Loading AWS config failed")
+			_, _ = fmt.Fprintf(os.Stderr, "loading config failed: %v\n", err)
 		}
 
 		client := s3.NewFromConfig(cfg)
@@ -100,6 +104,18 @@ var serverCmd = &cobra.Command{
 		}
 
 		r.POST("/upload", a.Upload)
+
+		if cleanupInterval != 0 {
+			go func() {
+				ticker := time.NewTicker(cleanupInterval)
+				for {
+					if err := repo.Cleanup(); err != nil {
+						_, _ = fmt.Fprintf(os.Stderr, "cleanup failed: %v\n", err)
+					}
+					<-ticker.C
+				}
+			}()
+		}
 
 		return r.Run()
 	},

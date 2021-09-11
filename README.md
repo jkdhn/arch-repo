@@ -23,13 +23,16 @@ Usage:
   server [flags]
 
 Flags:
-  -b, --bucket string   AWS bucket
-  -c, --claims string   required JWT token claims (JSON)
-  -h, --help            help for server
-  -i, --issuer string   JWT issuer
-  -k, --jwks string     JWT key store URL
-  -n, --name string     repository name
-      --skip-auth       disable authentication
+  -b, --bucket string               AWS bucket
+  -c, --claims string               required JWT token claims (JSON)
+      --cleanup-interval duration   Cleanup interval (default 48h0m0s)
+  -e, --endpoint string             S3 endpoint
+  -r, --endpoint-region string      S3 endpoint signing region
+  -h, --help                        help for server
+  -i, --issuer string               JWT issuer
+  -k, --jwks string                 JWT key store URL
+  -n, --name string                 repository name
+      --skip-auth                   disable authentication
 ```
 
 ### Example configuration
